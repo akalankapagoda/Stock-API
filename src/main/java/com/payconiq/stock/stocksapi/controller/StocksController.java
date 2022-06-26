@@ -1,15 +1,15 @@
 package com.payconiq.stock.stocksapi.controller;
 
 import com.payconiq.stock.stocksapi.model.CreateStockRequest;
+import com.payconiq.stock.stocksapi.model.ListStocksResponse;
 import com.payconiq.stock.stocksapi.model.Stock;
 import com.payconiq.stock.stocksapi.model.UpdateStockRequest;
-import com.payconiq.stock.stocksapi.repository.StockRepository;
+import com.payconiq.stock.stocksapi.service.StocksService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigInteger;
 import java.util.Optional;
 
 /**
@@ -19,10 +19,8 @@ import java.util.Optional;
 @RequestMapping("api/stocks")
 public class StocksController {
 
-    private final BigInteger ZERO = new BigInteger("0");
-
     @Autowired
-    private StockRepository stockRepository;
+    private StocksService stocksService;
 
     /**
      * Health check endpoint.
@@ -32,6 +30,21 @@ public class StocksController {
     @GetMapping("/hello")
     public String getHello() {
         return "Hello";
+    }
+
+    /**
+     * List stocks as a paginated list.
+     *
+     * @param pageNo Page number, defaults to 0
+     * @param pageSize Page Size, defaults to 10
+     *
+     * @return List of stocks for the provided page and pagination information
+     */
+    @GetMapping
+    public ListStocksResponse listStocks(@RequestParam(name = "pageNo", defaultValue = "0") Integer pageNo,
+                                         @RequestParam(name = "pageSize", defaultValue = "10") Integer pageSize) {
+
+        return stocksService.listStocks(pageNo, pageSize);
     }
 
     /**
@@ -45,7 +58,7 @@ public class StocksController {
     public Stock getStock(@PathVariable Integer id) {
 
 
-        Optional<Stock> stockOptional = stockRepository.findById(id);
+        Optional<Stock> stockOptional = stocksService.findById(id);
 
         if (stockOptional.isPresent()) {
             return stockOptional.get();
@@ -64,11 +77,7 @@ public class StocksController {
     @PostMapping
     public Stock createStock(@RequestBody CreateStockRequest createStockRequest) {
 
-        if (createStockRequest.getCurrentPrice().compareTo(ZERO) < 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Stock price cannot be negative");
-        }
-
-        return stockRepository.create(createStockRequest.getName(), createStockRequest.getCurrentPrice());
+        return stocksService.createStock(createStockRequest.getName(), createStockRequest.getCurrentPrice());
     }
 
     /**
@@ -81,21 +90,7 @@ public class StocksController {
     @PatchMapping("{id}")
     public Stock updateStockPrice(@PathVariable Integer id, @RequestBody UpdateStockRequest updateStockRequest) {
 
-        if (updateStockRequest.getCurrentPrice().compareTo(ZERO) < 0) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Stock price cannot be negative");
-        }
-
-        Optional<Stock> existingStockOptional = stockRepository.findById(id);
-
-        if (existingStockOptional.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Stock not available");
-        }
-
-        Stock existingStock = existingStockOptional.get();
-
-        existingStock.setCurrentPrice(updateStockRequest.getCurrentPrice());
-
-        return stockRepository.save(existingStock);
+        return stocksService.updateStock(id, updateStockRequest.getCurrentPrice());
 
     }
 
@@ -109,15 +104,7 @@ public class StocksController {
     @DeleteMapping("{id}")
     public Stock deleteStock(@PathVariable Integer id) {
 
-        Optional<Stock> existingStockOptional = stockRepository.findById(id);
-
-        if (existingStockOptional.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Stock not available");
-        }
-
-        stockRepository.deleteById(id);
-
-        return existingStockOptional.get();
+        return stocksService.deleteStock(id);
     }
 
 

@@ -1,6 +1,7 @@
 package com.payconiq.stock.stocksapi.controller;
 
 import com.payconiq.stock.stocksapi.model.CreateStockRequest;
+import com.payconiq.stock.stocksapi.model.ListStocksResponse;
 import com.payconiq.stock.stocksapi.model.Stock;
 import com.payconiq.stock.stocksapi.model.UpdateStockRequest;
 import com.payconiq.stock.stocksapi.repository.StockRepository;
@@ -10,11 +11,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.data.domain.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -43,6 +47,31 @@ public class StockControllerTest {
         firstStock.setName("FirstCompany");
         firstStock.setCurrentPrice(new BigInteger("150"));
         firstStock.setLastUpdated(new Date());
+    }
+
+    /**
+     * Test paginated listing of stocks.
+     */
+    @Test
+    public void testListStocks() {
+
+        Pageable paging10 = PageRequest.of(9, 10, Sort.by("id"));
+
+        List<Stock> stockList = new ArrayList<>();
+        stockList.add(firstStock);
+
+        Page<Stock> page = new PageImpl<>(stockList, paging10, 999L);
+
+        when(mockStockRepository.findAll(paging10)).thenReturn(page);
+
+        ListStocksResponse listStocksResponse = stocksController.listStocks(9, 10);
+
+        assertThat(listStocksResponse.getStocks()).isNotNull();
+        assertThat(listStocksResponse.getStocks().size()).isEqualTo(1);
+        assertThat(listStocksResponse.getStocks().get(0)).isEqualTo(firstStock);
+        assertThat(listStocksResponse.getTotalElements()).isEqualTo(999L);
+        assertThat(listStocksResponse.getTotalPages()).isEqualTo(100);
+
     }
 
     @Test

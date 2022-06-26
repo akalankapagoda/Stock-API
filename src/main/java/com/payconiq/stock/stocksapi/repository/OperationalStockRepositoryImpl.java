@@ -12,7 +12,7 @@ import java.math.BigInteger;
 public class OperationalStockRepositoryImpl implements OperationalStockRepository {
 
     @Autowired
-    private CrudStockRepository crudStockRepository;
+    private PagingCrudStockRepository pagingCrudStockRepository;
 
     @Override
     public Stock create(String name, BigInteger price) {
@@ -22,6 +22,6 @@ public class OperationalStockRepositoryImpl implements OperationalStockRepositor
         stock.setName(name);
         stock.setCurrentPrice(price);
 
-        return crudStockRepository.save(stock);
+        return pagingCrudStockRepository.save(stock);
     }
 }
