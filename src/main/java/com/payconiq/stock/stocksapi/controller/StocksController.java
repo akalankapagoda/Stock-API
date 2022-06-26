@@ -1,12 +1,15 @@
 package com.payconiq.stock.stocksapi.controller;
 
+import com.payconiq.stock.stocksapi.model.CreateStockRequest;
 import com.payconiq.stock.stocksapi.model.Stock;
+import com.payconiq.stock.stocksapi.model.UpdateStockRequest;
 import com.payconiq.stock.stocksapi.repository.StockRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigInteger;
 import java.util.Optional;
 
 /**
@@ -15,6 +18,8 @@ import java.util.Optional;
 @RestController
 @RequestMapping("api/stocks")
 public class StocksController {
+
+    private final BigInteger ZERO = new BigInteger("0");
 
     @Autowired
     private StockRepository stockRepository;
@@ -32,8 +37,9 @@ public class StocksController {
     /**
      * Retrieve a specific stock.
      *
-     * @param id
-     * @return
+     * @param id Stock id
+     *
+     * @return The stock
      */
     @GetMapping("{id}")
     public Stock getStock(@PathVariable Integer id) {
@@ -51,14 +57,67 @@ public class StocksController {
     /**
      * Create a new stock.
      *
-     * @param stock Stock object with name and current price
+     * @param createStockRequest Stock details to update
      *
      * @return Created Stock
      */
     @PostMapping
-    public Stock createStock(@RequestBody Stock stock) {
+    public Stock createStock(@RequestBody CreateStockRequest createStockRequest) {
 
-        return stockRepository.create(stock.getName(), stock.getCurrentPrice());
+        if (createStockRequest.getCurrentPrice().compareTo(ZERO) < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Stock price cannot be negative");
+        }
+
+        return stockRepository.create(createStockRequest.getName(), createStockRequest.getCurrentPrice());
+    }
+
+    /**
+     * Update an existing stock price.
+     *
+     * @param updateStockRequest New stock details to update
+     *
+     * @return Updated stock
+     */
+    @PatchMapping("{id}")
+    public Stock updateStockPrice(@PathVariable Integer id, @RequestBody UpdateStockRequest updateStockRequest) {
+
+        if (updateStockRequest.getCurrentPrice().compareTo(ZERO) < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Stock price cannot be negative");
+        }
+
+        Optional<Stock> existingStockOptional = stockRepository.findById(id);
+
+        if (existingStockOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Stock not available");
+        }
+
+        Stock existingStock = existingStockOptional.get();
+
+        existingStock.setCurrentPrice(updateStockRequest.getCurrentPrice());
+
+        return stockRepository.save(existingStock);
+
+    }
+
+    /**
+     * Delete an existing stock.
+     *
+     * @param id Stock id
+     *
+     * @return Deleted stock
+     */
+    @DeleteMapping("{id}")
+    public Stock deleteStock(@PathVariable Integer id) {
+
+        Optional<Stock> existingStockOptional = stockRepository.findById(id);
+
+        if (existingStockOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Stock not available");
+        }
+
+        stockRepository.deleteById(id);
+
+        return existingStockOptional.get();
     }
 
 
