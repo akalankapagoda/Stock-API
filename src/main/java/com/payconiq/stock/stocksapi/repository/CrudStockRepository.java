@@ -4,7 +4,7 @@ import com.payconiq.stock.stocksapi.model.Stock;
 import org.springframework.data.repository.CrudRepository;
 
 /**
- * This will handle DB operations related to {@link Stock} entity for us.
+ * Stock repository which supports CRUD operations.
  */
-public interface StockRepository extends CrudStockRepository, OperationalStockRepository {
+public interface CrudStockRepository  extends CrudRepository<Stock, Integer> {
 }
